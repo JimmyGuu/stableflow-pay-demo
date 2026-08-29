@@ -4,6 +4,7 @@ import { useSyncExternalStore } from "react";
 
 import { AddCreditsCard } from "@/components/AddCreditsCard";
 import { DemoConfigPanel } from "@/components/DemoConfigPanel";
+import { WebhookEventsTable } from "@/components/WebhookEventsTable";
 import {
   DEFAULT_DEMO_CONFIG,
   getDemoConfigSnapshot,
@@ -66,6 +67,10 @@ export function HomeClient() {
       <div className="flex w-full max-w-[920px] flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center">
         <DemoConfigPanel config={config} onChange={handleConfigChange} />
         <AddCreditsCard config={config} />
+      </div>
+
+      <div className="mt-6 w-full max-w-[920px]">
+        <WebhookEventsTable />
       </div>
     </main>
   );

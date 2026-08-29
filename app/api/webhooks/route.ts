@@ -4,6 +4,7 @@ import {
   getDB,
   getWebhookSecret,
   insertWebhookEventIfNew,
+  listWebhookEvents,
   updateOrderStatus,
 } from "@/lib/db";
 import {
@@ -20,6 +21,19 @@ function headerValue(headers: Headers, names: string[]): string | null {
     if (value) return value;
   }
   return null;
+}
+
+export async function GET() {
+  try {
+    const db = await getDB();
+    const events = await listWebhookEvents(db, 50);
+    return NextResponse.json({ events });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Failed to list webhook events";
+    console.error("[webhooks] GET", message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

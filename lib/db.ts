@@ -117,6 +117,31 @@ export async function updateOrderStatus(params: {
   }
 }
 
+export type WebhookEventRow = {
+  id: string;
+  type: string;
+  resource_id: string | null;
+  payload_json: string;
+  received_at: string;
+};
+
+export async function listWebhookEvents(
+  db: D1Database,
+  limit = 50,
+): Promise<WebhookEventRow[]> {
+  const result = await db
+    .prepare(
+      `SELECT id, type, resource_id, payload_json, received_at
+       FROM webhook_events
+       ORDER BY received_at DESC
+       LIMIT ?`,
+    )
+    .bind(limit)
+    .all<WebhookEventRow>();
+
+  return result.results ?? [];
+}
+
 export async function insertWebhookEventIfNew(params: {
   db: D1Database;
   id: string;
