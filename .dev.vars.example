@@ -1,0 +1,11 @@
+# Copy to .dev.vars for Wrangler / OpenNext local preview
+NEXTJS_ENV=development
+
+STABLEFLOW_API_BASE=https://api.stableflow.ai
+STABLEFLOW_PAY_HOST=https://pay.stableflow.ai
+STABLEFLOW_API_KEY=
+STABLEFLOW_WEBHOOK_SECRET=
+CHECKOUT_NETWORK=near
+CHECKOUT_SYMBOL=USDC
+CHECKOUT_RECIPIENT=
+NEXT_PUBLIC_APP_URL=http://localhost:3000
