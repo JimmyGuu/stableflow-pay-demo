@@ -82,6 +82,8 @@ After payment, StableFlow Pay redirects to:
 
 ## Cloudflare deploy
 
+### Local
+
 ```bash
 pnpm cf-typegen
 pnpm db:migrate:remote
@@ -95,3 +97,17 @@ Preview the Workers runtime locally:
 ```bash
 pnpm preview
 ```
+
+### Workers Builds (GitHub)
+
+In the Worker → **Settings** → **Builds**, use OpenNext commands (not `pnpm build` / `next build`):
+
+| Setting | Value |
+| --- | --- |
+| Build command | `pnpm install && pnpm run build:cf` |
+| Deploy command | `pnpm exec opennextjs-cloudflare deploy` |
+| Non-production deploy | `pnpm exec opennextjs-cloudflare upload` |
+
+`pnpm build` only produces `.next/`. Workers need `.open-next/` from `build:cf` (`opennextjs-cloudflare build`). Skipping that causes: `Could not find compiled Open Next config`.
+
+Also set **Build variables and secrets** and runtime **Variables and Secrets** for the env vars listed above.
