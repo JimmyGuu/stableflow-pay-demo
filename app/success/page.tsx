@@ -86,12 +86,12 @@ export default async function SuccessPage({
           ))}
         </dl>
 
-        {order ? (
+        {/* {order ? (
           <p className="mt-4 text-sm text-zinc-500">
             Stored order status in D1:{" "}
             <span className="font-medium text-zinc-900">{order.status}</span>
           </p>
-        ) : null}
+        ) : null} */}
 
         <div className="mt-8">
           <Link
