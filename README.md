@@ -16,20 +16,25 @@ cp .env.example .env.local
 cp .dev.vars.example .dev.vars
 ```
 
-Fill server-only secrets in `.env.local` (for `next dev`) and `.dev.vars` (for Wrangler / OpenNext preview):
+Server env (hosts only):
 
 | Variable | Purpose |
 | --- | --- |
 | `STABLEFLOW_API_BASE` | StableFlow API host |
 | `STABLEFLOW_PAY_HOST` | StableFlow Pay UI host (`/checkout?sessionId=`) |
-| `STABLEFLOW_API_KEY` | `x-api-key` for `POST /v1/pay/checkout/sessions` |
-| `STABLEFLOW_WEBHOOK_SECRET` | Webhook HMAC secret from StableFlow Settings |
-| `CHECKOUT_NETWORK` | Destination network (for example `near`) |
-| `CHECKOUT_SYMBOL` | Destination symbol (for example `USDC`) |
-| `CHECKOUT_RECIPIENT` | Merchant recipient address |
 | `NEXT_PUBLIC_APP_URL` | This demo origin, used as `success_url` |
 
-Never expose `STABLEFLOW_API_KEY` or `STABLEFLOW_WEBHOOK_SECRET` to the browser.
+Demo configuration is entered in the browser UI and stored in `localStorage`:
+
+- `STABLEFLOW_API_KEY`
+- `STABLEFLOW_WEBHOOK_SECRET`
+- `CHECKOUT_NETWORK` (dropdown from v3 `FIXED_CHAINS`)
+- `CHECKOUT_SYMBOL` (dropdown from v3 `PAYOUT_SYMBOLS`)
+- `CHECKOUT_RECIPIENT`
+
+On checkout, the API key / network / symbol / recipient are sent to the server route (demo-only). The webhook secret is upserted into D1 so `/api/webhooks` can verify signatures.
+
+**Production apps must not put API keys or webhook secrets in the frontend.** The page shows this warning for demo viewers.
 
 ## Database
 
@@ -57,14 +62,14 @@ D1 binding in `wrangler.jsonc`:
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Choose an amount and submit to create a checkout session, then redirect to StableFlow Pay.
+Open [http://localhost:3000](http://localhost:3000). Fill the demo configuration, choose an amount, then start checkout.
 
 ## Webhooks
 
 1. Deploy or tunnel this app so StableFlow can reach it.
 2. In StableFlow Pay Settings, create a webhook pointing to:
    `https://<your-demo-host>/api/webhooks`
-3. Save the signing secret into `STABLEFLOW_WEBHOOK_SECRET`.
+3. Paste the signing secret into the demo UI (`STABLEFLOW_WEBHOOK_SECRET`) and run a checkout once so it is saved to D1.
 
 Verification follows the PingPay-compatible scheme:
 
@@ -90,7 +95,7 @@ pnpm db:migrate:remote
 pnpm deploy
 ```
 
-Set the same secrets in the Cloudflare Workers dashboard (or via `wrangler secret put`).
+Set host env vars in the Cloudflare Workers dashboard (or via `wrangler secret put` / vars).
 
 Preview the Workers runtime locally:
 
@@ -110,4 +115,4 @@ In the Worker → **Settings** → **Builds**, use OpenNext commands (not `pnpm 
 
 `pnpm build` only produces `.next/`. Workers need `.open-next/` from `build:cf` (`opennextjs-cloudflare build`). Skipping that causes: `Could not find compiled Open Next config`.
 
-Also set **Build variables and secrets** and runtime **Variables and Secrets** for the env vars listed above.
+Also set **Build variables and secrets** and runtime **Variables and Secrets** for the host env vars listed above.

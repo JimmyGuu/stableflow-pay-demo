@@ -1,4 +1,4 @@
-import { getServerEnv } from "@/lib/env";
+import { getAppEnv } from "@/lib/env";
 
 export type CheckoutSession = {
   amount: string;
@@ -13,6 +13,14 @@ export type CheckoutSession = {
   symbol: string;
 };
 
+export type CreateCheckoutSessionInput = {
+  amount: string;
+  apiKey: string;
+  network: string;
+  symbol: string;
+  recipient: string;
+};
+
 type ApiEnvelope<T> = {
   code: number;
   data?: T;
@@ -25,27 +33,29 @@ export function generateOutOrderNo(): string {
 }
 
 export function buildCheckoutUrl(sessionId: string): string {
-  const env = getServerEnv();
+  const env = getAppEnv();
   const url = new URL("/checkout", env.STABLEFLOW_PAY_HOST);
   url.searchParams.set("sessionId", sessionId);
   return url.toString();
 }
 
-export async function createCheckoutSession(amount: string): Promise<{
+export async function createCheckoutSession(
+  input: CreateCheckoutSessionInput,
+): Promise<{
   session: CheckoutSession;
   checkoutUrl: string;
 }> {
-  const env = getServerEnv();
+  const env = getAppEnv();
   const outOrderNo = generateOutOrderNo();
   const successUrl = new URL("/success", env.NEXT_PUBLIC_APP_URL).toString();
 
   const body = {
-    amount,
-    network: env.CHECKOUT_NETWORK,
+    amount: input.amount,
+    network: input.network,
     out_order_no: outOrderNo,
-    recipient: env.CHECKOUT_RECIPIENT,
+    recipient: input.recipient,
     success_url: successUrl,
-    symbol: env.CHECKOUT_SYMBOL,
+    symbol: input.symbol,
   };
 
   const response = await fetch(
@@ -54,7 +64,7 @@ export async function createCheckoutSession(amount: string): Promise<{
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": env.STABLEFLOW_API_KEY,
+        "x-api-key": input.apiKey,
       },
       body: JSON.stringify(body),
     },

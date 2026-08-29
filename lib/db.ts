@@ -150,3 +150,35 @@ export async function insertWebhookEventIfNew(params: {
 
   return true;
 }
+
+const DEMO_SETTINGS_ID = "default";
+
+export async function upsertWebhookSecret(
+  db: D1Database,
+  webhookSecret: string,
+  updatedAt: string,
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO demo_settings (id, webhook_secret, updated_at)
+       VALUES (?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         webhook_secret = excluded.webhook_secret,
+         updated_at = excluded.updated_at`,
+    )
+    .bind(DEMO_SETTINGS_ID, webhookSecret, updatedAt)
+    .run();
+}
+
+export async function getWebhookSecret(
+  db: D1Database,
+): Promise<string | null> {
+  const row = await db
+    .prepare(
+      `SELECT webhook_secret FROM demo_settings WHERE id = ? LIMIT 1`,
+    )
+    .bind(DEMO_SETTINGS_ID)
+    .first<{ webhook_secret: string }>();
+
+  return row?.webhook_secret?.trim() || null;
+}

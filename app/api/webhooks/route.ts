@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 
 import {
   getDB,
+  getWebhookSecret,
   insertWebhookEventIfNew,
   updateOrderStatus,
 } from "@/lib/db";
-import { getServerEnv } from "@/lib/env";
 import {
   extractOrderRefs,
   mapEventTypeToOrderStatus,
@@ -14,10 +14,7 @@ import {
   type WebhookEvent,
 } from "@/lib/webhook";
 
-function headerValue(
-  headers: Headers,
-  names: string[],
-): string | null {
+function headerValue(headers: Headers, names: string[]): string | null {
   for (const name of names) {
     const value = headers.get(name);
     if (value) return value;
@@ -47,14 +44,22 @@ export async function POST(request: Request) {
     );
   }
 
-  let secret: string;
+  let secret: string | null = null;
   try {
-    secret = getServerEnv().STABLEFLOW_WEBHOOK_SECRET;
+    const db = await getDB();
+    secret = await getWebhookSecret(db);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Server misconfigured";
+      error instanceof Error ? error.message : "Failed to load webhook secret";
     console.error("[webhooks]", message);
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+
+  if (!secret) {
+    return NextResponse.json(
+      { error: "Webhook secret is not configured yet" },
+      { status: 401 },
+    );
   }
 
   const valid = verifyWebhookSignature({

@@ -8,8 +8,14 @@ import {
   PRESET_AMOUNTS,
   toAmountString,
 } from "@/lib/amount";
+import type { DemoConfig } from "@/lib/demo-config";
+import { isDemoConfigReady } from "@/lib/demo-config";
 
-export function AddCreditsCard() {
+type AddCreditsCardProps = {
+  config: DemoConfig;
+};
+
+export function AddCreditsCard({ config }: AddCreditsCardProps) {
   const [preset, setPreset] = useState<number | null>(1);
   const [custom, setCustom] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,9 +23,10 @@ export function AddCreditsCard() {
 
   const customAmount = parsePositiveAmount(custom);
   const amount = customAmount !== null ? customAmount : preset;
+  const configReady = isDemoConfigReady(config);
 
   async function handleSubmit() {
-    if (amount === null || loading) return;
+    if (amount === null || loading || !configReady) return;
 
     setLoading(true);
     setError(null);
@@ -28,7 +35,14 @@ export function AddCreditsCard() {
       const response = await fetch("/api/checkout/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: toAmountString(amount) }),
+        body: JSON.stringify({
+          amount: toAmountString(amount),
+          apiKey: config.apiKey.trim(),
+          webhookSecret: config.webhookSecret.trim(),
+          network: config.network,
+          symbol: config.symbol,
+          recipient: config.recipient.trim(),
+        }),
       });
 
       const payload = (await response.json()) as {
@@ -153,6 +167,12 @@ export function AddCreditsCard() {
         .
       </p>
 
+      {!configReady ? (
+        <p className="mt-4 text-sm text-amber-700" role="status">
+          Fill in the demo configuration above before starting checkout.
+        </p>
+      ) : null}
+
       {error ? (
         <p className="mt-4 text-sm text-red-600" role="alert">
           {error}
@@ -162,7 +182,7 @@ export function AddCreditsCard() {
       <div className="mt-6 flex justify-end">
         <button
           type="button"
-          disabled={amount === null || loading}
+          disabled={amount === null || loading || !configReady}
           onClick={handleSubmit}
           className="cursor-pointer rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
         >
