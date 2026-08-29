@@ -8,12 +8,17 @@ export type DemoConfig = {
   recipient: string;
 };
 
-export const DEFAULT_DEMO_CONFIG: DemoConfig = {
-  apiKey: "",
-  webhookSecret: "",
+/** Defaults used when `full=1` is absent (simple demo mode). */
+export const SIMPLE_MODE_DEFAULTS: Omit<DemoConfig, "apiKey"> = {
+  webhookSecret: "whsec_AIzq42FKac3uwqpm",
   network: "near",
   symbol: "USDT",
-  recipient: "",
+  recipient: "jimmygu.near",
+};
+
+export const DEFAULT_DEMO_CONFIG: DemoConfig = {
+  apiKey: "",
+  ...SIMPLE_MODE_DEFAULTS,
 };
 
 export function parseDemoConfig(value: unknown): DemoConfig {
@@ -25,16 +30,21 @@ export function parseDemoConfig(value: unknown): DemoConfig {
   return {
     apiKey: typeof record.apiKey === "string" ? record.apiKey : "",
     webhookSecret:
-      typeof record.webhookSecret === "string" ? record.webhookSecret : "",
+      typeof record.webhookSecret === "string" && record.webhookSecret
+        ? record.webhookSecret
+        : SIMPLE_MODE_DEFAULTS.webhookSecret,
     network:
       typeof record.network === "string" && record.network
         ? record.network
-        : DEFAULT_DEMO_CONFIG.network,
+        : SIMPLE_MODE_DEFAULTS.network,
     symbol:
       typeof record.symbol === "string" && record.symbol
         ? record.symbol
-        : DEFAULT_DEMO_CONFIG.symbol,
-    recipient: typeof record.recipient === "string" ? record.recipient : "",
+        : SIMPLE_MODE_DEFAULTS.symbol,
+    recipient:
+      typeof record.recipient === "string" && record.recipient
+        ? record.recipient
+        : SIMPLE_MODE_DEFAULTS.recipient,
   };
 }
 
@@ -68,6 +78,20 @@ export function saveDemoConfig(config: DemoConfig): void {
   window.localStorage.setItem(DEMO_CONFIG_STORAGE_KEY, raw);
   cachedRaw = raw;
   cachedConfig = config;
+}
+
+/** Effective config used for checkout / readiness checks. */
+export function resolveCheckoutConfig(
+  stored: DemoConfig,
+  fullMode: boolean,
+): DemoConfig {
+  if (fullMode) {
+    return stored;
+  }
+  return {
+    apiKey: stored.apiKey,
+    ...SIMPLE_MODE_DEFAULTS,
+  };
 }
 
 export function isDemoConfigReady(config: DemoConfig): boolean {

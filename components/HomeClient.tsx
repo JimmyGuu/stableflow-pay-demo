@@ -8,7 +8,9 @@ import { WebhookEventsTable } from "@/components/WebhookEventsTable";
 import {
   DEFAULT_DEMO_CONFIG,
   getDemoConfigSnapshot,
+  resolveCheckoutConfig,
   saveDemoConfig,
+  SIMPLE_MODE_DEFAULTS,
   type DemoConfig,
 } from "@/lib/demo-config";
 
@@ -35,15 +37,27 @@ function getServerSnapshot(): DemoConfig {
   return DEFAULT_DEMO_CONFIG;
 }
 
-export function HomeClient() {
-  const config = useSyncExternalStore(
+type HomeClientProps = {
+  fullMode: boolean;
+};
+
+export function HomeClient({ fullMode }: HomeClientProps) {
+  const stored = useSyncExternalStore(
     subscribe,
     getClientSnapshot,
     getServerSnapshot,
   );
+  const config = resolveCheckoutConfig(stored, fullMode);
 
   function handleConfigChange(next: DemoConfig) {
-    saveDemoConfig(next);
+    if (fullMode) {
+      saveDemoConfig(next);
+    } else {
+      saveDemoConfig({
+        ...SIMPLE_MODE_DEFAULTS,
+        apiKey: next.apiKey,
+      });
+    }
     emitConfigChange();
   }
 
@@ -52,26 +66,48 @@ export function HomeClient() {
       <div className="mb-6 w-full max-w-[440px] rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
         <p className="font-semibold">Security notice for demo viewers</p>
         <p className="mt-1">
-          This page lets you paste{" "}
-          <code className="rounded bg-amber-100 px-1">STABLEFLOW_API_KEY</code>{" "}
-          and{" "}
-          <code className="rounded bg-amber-100 px-1">
-            STABLEFLOW_WEBHOOK_SECRET
-          </code>{" "}
-          for local testing only. Do not expose these secrets in a production
-          frontend. Keep them on the server (environment variables / Workers
-          secrets) in real apps.
+          {fullMode ? (
+            <>
+              This page lets you paste{" "}
+              <code className="rounded bg-amber-100 px-1">
+                STABLEFLOW_API_KEY
+              </code>{" "}
+              and{" "}
+              <code className="rounded bg-amber-100 px-1">
+                STABLEFLOW_WEBHOOK_SECRET
+              </code>{" "}
+              for local testing only. Do not expose these secrets in a
+              production frontend. Keep them on the server (environment
+              variables / Workers secrets) in real apps.
+            </>
+          ) : (
+            <>
+              This page lets you paste{" "}
+              <code className="rounded bg-amber-100 px-1">
+                STABLEFLOW_API_KEY
+              </code>{" "}
+              for local testing only. Do not expose API keys in a production
+              frontend. Keep them on the server (environment variables /
+              Workers secrets) in real apps.
+            </>
+          )}
         </p>
       </div>
 
       <div className="flex w-full max-w-[920px] flex-col items-center gap-6 lg:flex-row lg:items-start lg:justify-center">
-        <DemoConfigPanel config={config} onChange={handleConfigChange} />
+        <DemoConfigPanel
+          config={config}
+          fullMode={fullMode}
+          onChange={handleConfigChange}
+        />
         <AddCreditsCard config={config} />
       </div>
 
-      <div className="mt-6 w-full max-w-[920px]">
-        <WebhookEventsTable />
-      </div>
+      {fullMode ? (
+        <div className="mt-6 w-full max-w-[920px]">
+          <WebhookEventsTable />
+        </div>
+      ) : null}
     </main>
   );
 }
