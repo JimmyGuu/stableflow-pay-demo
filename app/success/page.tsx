@@ -6,14 +6,17 @@ export const dynamic = "force-dynamic";
 
 type SuccessSearchParams = {
   amount?: string;
-  network?: string;
-  expires_at?: string;
   created_at?: string;
+  destination_txHash?: string;
+  expires_at?: string;
+  network?: string;
   out_order_no?: string;
+  paid_at?: string;
   recipient?: string;
   session_id?: string;
   status?: string;
   symbol?: string;
+  tx_hash?: string;
 };
 
 function pick(value: string | string[] | undefined): string {
@@ -52,6 +55,9 @@ export default async function SuccessPage({
     { label: "Recipient", value: pick(params.recipient) },
     { label: "Created At", value: pick(params.created_at) },
     { label: "Expires At", value: pick(params.expires_at) },
+    { label: "Paid At", value: pick(params.paid_at) },
+    { label: "Tx Hash", value: pick(params.tx_hash) },
+    { label: "Destination Tx", value: pick(params.destination_txHash) },
   ].filter((row) => row.value);
 
   const isSuccess = queryStatus === "success" || order?.status === "success";
