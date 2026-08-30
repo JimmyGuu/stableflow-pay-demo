@@ -70,11 +70,7 @@ export function HomeClient({ fullMode }: HomeClientProps) {
           <code className="rounded bg-amber-100 px-1">STABLEFLOW_API_KEY</code>{" "}
           for local testing only. Do not expose API keys in a production
           frontend. Keep them on the server (environment variables / Workers
-          secrets) in real apps. Webhook signing uses{" "}
-          <code className="rounded bg-amber-100 px-1">
-            STABLEFLOW_WEBHOOK_SECRET
-          </code>{" "}
-          from the server environment only.
+          secrets) in real apps.
         </p>
       </div>
 
