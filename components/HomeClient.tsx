@@ -66,31 +66,15 @@ export function HomeClient({ fullMode }: HomeClientProps) {
       <div className="mb-6 w-full max-w-[440px] rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
         <p className="font-semibold">Security notice for demo viewers</p>
         <p className="mt-1">
-          {fullMode ? (
-            <>
-              This page lets you paste{" "}
-              <code className="rounded bg-amber-100 px-1">
-                STABLEFLOW_API_KEY
-              </code>{" "}
-              and{" "}
-              <code className="rounded bg-amber-100 px-1">
-                STABLEFLOW_WEBHOOK_SECRET
-              </code>{" "}
-              for local testing only. Do not expose these secrets in a
-              production frontend. Keep them on the server (environment
-              variables / Workers secrets) in real apps.
-            </>
-          ) : (
-            <>
-              This page lets you paste{" "}
-              <code className="rounded bg-amber-100 px-1">
-                STABLEFLOW_API_KEY
-              </code>{" "}
-              for local testing only. Do not expose API keys in a production
-              frontend. Keep them on the server (environment variables /
-              Workers secrets) in real apps.
-            </>
-          )}
+          This page lets you paste{" "}
+          <code className="rounded bg-amber-100 px-1">STABLEFLOW_API_KEY</code>{" "}
+          for local testing only. Do not expose API keys in a production
+          frontend. Keep them on the server (environment variables / Workers
+          secrets) in real apps. Webhook signing uses{" "}
+          <code className="rounded bg-amber-100 px-1">
+            STABLEFLOW_WEBHOOK_SECRET
+          </code>{" "}
+          from the server environment only.
         </p>
       </div>
 

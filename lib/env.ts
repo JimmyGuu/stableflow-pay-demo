@@ -3,7 +3,7 @@ export type AppEnv = {
   NEXT_PUBLIC_APP_URL: string;
 };
 
-function required(name: keyof AppEnv, value: string | undefined): string {
+function required(name: string, value: string | undefined): string {
   const trimmed = value?.trim();
   if (!trimmed) {
     throw new Error(`Missing required environment variable: ${name}`);
@@ -15,7 +15,7 @@ function requiredUrl(name: keyof AppEnv, value: string | undefined): string {
   return required(name, value).replace(/\/$/, "");
 }
 
-/** Host / URL settings only. Secrets and checkout fields come from the demo UI. */
+/** Host / URL settings. Secrets come from server env / Workers secrets. */
 export function getAppEnv(): AppEnv {
   return {
     STABLEFLOW_API_BASE: requiredUrl(
@@ -27,4 +27,12 @@ export function getAppEnv(): AppEnv {
       process.env.NEXT_PUBLIC_APP_URL,
     ),
   };
+}
+
+/** Signing secret for incoming webhooks (server-only). */
+export function getWebhookSecret(): string {
+  return required(
+    "STABLEFLOW_WEBHOOK_SECRET",
+    process.env.STABLEFLOW_WEBHOOK_SECRET,
+  );
 }

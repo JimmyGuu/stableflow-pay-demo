@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 
 import {
   getDB,
-  getWebhookSecret,
   insertWebhookEventIfNew,
   listWebhookEvents,
   updateOrderStatus,
 } from "@/lib/db";
+import { getWebhookSecret } from "@/lib/env";
 import {
   extractOrderRefs,
   mapEventTypeToOrderStatus,
@@ -31,7 +31,7 @@ export async function GET() {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to list webhook events";
-    console.error("[webhooks] GET", message);
+    console.error("[webhook] GET", message);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
@@ -39,16 +39,16 @@ export async function GET() {
 export async function POST(request: Request) {
   const rawBody = await request.text();
   const timestamp = headerValue(request.headers, [
-    "x-ping-timestamp",
-    "X-Ping-Timestamp",
+    "x-stableflowpay-timestamp",
+    "X-Stableflowpay-Timestamp",
   ]);
   const signature = headerValue(request.headers, [
-    "x-ping-signature",
-    "X-Ping-Signature",
+    "x-stableflowpay-signature",
+    "X-Stableflowpay-Signature",
   ]);
   const headerEventType = headerValue(request.headers, [
-    "x-ping-event-type",
-    "X-Ping-Event-Type",
+    "x-stableflowpay-event-type",
+    "X-Stableflowpay-Event-Type",
   ]);
 
   if (!timestamp || !signature) {
@@ -58,20 +58,15 @@ export async function POST(request: Request) {
     );
   }
 
-  let secret: string | null = null;
+  let secret: string;
   try {
-    const db = await getDB();
-    secret = await getWebhookSecret(db);
+    secret = getWebhookSecret();
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Failed to load webhook secret";
-    console.error("[webhooks]", message);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-
-  if (!secret) {
+      error instanceof Error ? error.message : "Webhook secret is not configured";
+    console.error("[webhook]", message);
     return NextResponse.json(
-      { error: "Webhook secret is not configured yet" },
+      { error: "Webhook secret is not configured" },
       { status: 401 },
     );
   }

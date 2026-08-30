@@ -16,24 +16,26 @@ cp .env.example .env.local
 cp .dev.vars.example .dev.vars
 ```
 
-Server env (hosts only):
+Then set `STABLEFLOW_WEBHOOK_SECRET` in both `.env.local` and `.dev.vars` (gitignored). Never commit the real value.
+
+Server env:
 
 | Variable | Purpose |
 | --- | --- |
 | `STABLEFLOW_API_BASE` | StableFlow API host |
 | `NEXT_PUBLIC_APP_URL` | This demo origin, used as `success_url` |
+| `STABLEFLOW_WEBHOOK_SECRET` | HMAC signing secret for incoming webhooks (server-only) |
 
-Demo configuration is entered in the browser UI and stored in `localStorage`:
+Demo configuration entered in the browser UI (stored in `localStorage`):
 
 - `STABLEFLOW_API_KEY`
-- `STABLEFLOW_WEBHOOK_SECRET`
 - `CHECKOUT_NETWORK` (dropdown from v3 `FIXED_CHAINS`)
 - `CHECKOUT_SYMBOL` (dropdown from v3 `PAYOUT_SYMBOLS`)
 - `CHECKOUT_RECIPIENT`
 
-On checkout, the API key / network / symbol / recipient are sent to the server route (demo-only). The webhook secret is upserted into D1 so `/api/webhooks` can verify signatures.
+On checkout, the API key / network / symbol / recipient are sent to the server route (demo-only). Webhook verification always uses `STABLEFLOW_WEBHOOK_SECRET` from the server environment.
 
-**Production apps must not put API keys or webhook secrets in the frontend.** The page shows this warning for demo viewers.
+**Production apps must not put API keys in the frontend.** The page shows this warning for demo viewers.
 
 ## Database
 
@@ -67,12 +69,12 @@ Open [http://localhost:3000](http://localhost:3000). Fill the demo configuration
 
 1. Deploy or tunnel this app so StableFlow can reach it.
 2. In StableFlow Pay Settings, create a webhook pointing to:
-   `https://<your-demo-host>/api/webhooks`
-3. Paste the signing secret into the demo UI (`STABLEFLOW_WEBHOOK_SECRET`) and run a checkout once so it is saved to D1.
+   `https://<your-demo-host>/api/webhook`
+3. Set the signing secret as `STABLEFLOW_WEBHOOK_SECRET` on the server (see Cloudflare deploy below). Do not put it in the frontend or in `wrangler.jsonc` `vars`.
 
-Verification follows the PingPay-compatible scheme:
+Verification:
 
-- headers: `x-ping-timestamp`, `x-ping-signature`, `x-ping-event-type`
+- headers: `x-stableflowpay-timestamp`, `x-stableflowpay-signature`, `x-stableflowpay-event-type`
 - signature: `HMAC-SHA256(secret, `${timestamp}.${rawBody}`)` hex digest
 - verify against the **raw body**, then parse JSON
 
@@ -94,9 +96,17 @@ pnpm db:migrate:remote
 pnpm deploy
 ```
 
-Set host env vars in the Cloudflare Workers dashboard (or via `wrangler secret put` / vars).
+Set non-secret host vars in `wrangler.jsonc` `vars` or the Cloudflare Workers dashboard.
 
-Preview the Workers runtime locally:
+Set the webhook secret as an **encrypted Workers secret** (never in `wrangler.jsonc` or git):
+
+```bash
+pnpm exec wrangler secret put STABLEFLOW_WEBHOOK_SECRET
+```
+
+Or: Dashboard → Worker → Settings → Variables and Secrets → Add → Encrypt.
+
+Preview the Workers runtime locally (reads `.dev.vars`):
 
 ```bash
 pnpm preview
@@ -114,4 +124,4 @@ In the Worker → **Settings** → **Builds**, use OpenNext commands (not `pnpm 
 
 `pnpm build` only produces `.next/`. Workers need `.open-next/` from `build:cf` (`opennextjs-cloudflare build`). Skipping that causes: `Could not find compiled Open Next config`.
 
-Also set **Build variables and secrets** and runtime **Variables and Secrets** for the host env vars listed above.
+Also set **Build variables and secrets** and runtime **Variables and Secrets**. Put `STABLEFLOW_WEBHOOK_SECRET` in encrypted secrets for runtime (required for `POST /api/webhook`). Do not store it as a plain text variable or in the repository.

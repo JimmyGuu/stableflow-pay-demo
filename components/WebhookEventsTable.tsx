@@ -27,7 +27,7 @@ export function WebhookEventsTable() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch("/api/webhooks");
+      const response = await fetch("/api/webhook");
       const payload = (await response.json()) as {
         events?: WebhookEventItem[];
         error?: string;
@@ -55,11 +55,11 @@ export function WebhookEventsTable() {
       <div className="mb-4 flex items-center justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold tracking-tight text-zinc-950">
-            Webhook events
+            Received webhook events
           </h2>
           <p className="mt-1 text-sm text-zinc-500">
             Messages received by{" "}
-            <code className="rounded bg-zinc-100 px-1">POST /api/webhooks</code>{" "}
+            <code className="rounded bg-zinc-100 px-1">POST /api/webhook</code>{" "}
             and stored in D1.
           </p>
         </div>

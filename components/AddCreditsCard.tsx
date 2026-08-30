@@ -38,7 +38,6 @@ export function AddCreditsCard({ config }: AddCreditsCardProps) {
         body: JSON.stringify({
           amount: toAmountString(amount),
           apiKey: config.apiKey.trim(),
-          webhookSecret: config.webhookSecret.trim(),
           network: config.network,
           symbol: config.symbol,
           recipient: config.recipient.trim(),

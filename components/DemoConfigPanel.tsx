@@ -31,7 +31,7 @@ export function DemoConfigPanel({
       </h2>
       <p className="mt-2 text-sm leading-6 text-zinc-500">
         {fullMode
-          ? "Values below are used when creating checkout sessions. The webhook secret is saved to D1 on checkout so incoming webhooks can be verified."
+          ? "Values below are used when creating checkout sessions. Webhook signature verification uses STABLEFLOW_WEBHOOK_SECRET from the server environment."
           : "Enter your StableFlow API key to start a checkout. Other settings use built-in demo defaults."}
       </p>
 
@@ -52,22 +52,6 @@ export function DemoConfigPanel({
 
         {fullMode ? (
           <>
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-900">
-                STABLEFLOW_WEBHOOK_SECRET
-              </span>
-              <input
-                type="password"
-                autoComplete="off"
-                placeholder="whsec_..."
-                value={config.webhookSecret}
-                onChange={(event) =>
-                  update("webhookSecret", event.target.value)
-                }
-                className={fieldClassName}
-              />
-            </label>
-
             <label className="block space-y-2">
               <span className="text-sm font-semibold text-zinc-900">
                 CHECKOUT_NETWORK

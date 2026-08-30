@@ -5,13 +5,12 @@ import {
   isValidCheckoutNetwork,
   isValidCheckoutSymbol,
 } from "@/lib/checkout-options";
-import { getDB, insertOrder, upsertWebhookSecret } from "@/lib/db";
+import { getDB, insertOrder } from "@/lib/db";
 import { createCheckoutSession } from "@/lib/stableflow";
 
 type CreateSessionBody = {
   amount?: string;
   apiKey?: string;
-  webhookSecret?: string;
   network?: string;
   symbol?: string;
   recipient?: string;
@@ -29,7 +28,6 @@ export async function POST(request: Request) {
     }
 
     const apiKey = body.apiKey?.trim() ?? "";
-    const webhookSecret = body.webhookSecret?.trim() ?? "";
     const network = body.network?.trim() ?? "";
     const symbol = body.symbol?.trim() ?? "";
     const recipient = body.recipient?.trim() ?? "";
@@ -37,12 +35,6 @@ export async function POST(request: Request) {
     if (!apiKey) {
       return NextResponse.json(
         { error: "API key is required" },
-        { status: 400 },
-      );
-    }
-    if (!webhookSecret) {
-      return NextResponse.json(
-        { error: "Webhook secret is required" },
         { status: 400 },
       );
     }
@@ -75,8 +67,6 @@ export async function POST(request: Request) {
     });
     const now = new Date().toISOString();
     const db = await getDB();
-
-    await upsertWebhookSecret(db, webhookSecret, now);
 
     await insertOrder(db, {
       id: session.out_order_no,

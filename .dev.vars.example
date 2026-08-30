@@ -3,3 +3,6 @@ NEXTJS_ENV=development
 
 STABLEFLOW_API_BASE=https://test-api.stableflow.ai
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Server-only: webhook HMAC signing secret (never commit the real value)
+STABLEFLOW_WEBHOOK_SECRET=

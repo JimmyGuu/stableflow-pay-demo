@@ -2,7 +2,6 @@ export const DEMO_CONFIG_STORAGE_KEY = "stableflow-pay-demo.config";
 
 export type DemoConfig = {
   apiKey: string;
-  webhookSecret: string;
   network: string;
   symbol: string;
   recipient: string;
@@ -10,7 +9,6 @@ export type DemoConfig = {
 
 /** Defaults used when `full=1` is absent (simple demo mode). */
 export const SIMPLE_MODE_DEFAULTS: Omit<DemoConfig, "apiKey"> = {
-  webhookSecret: "whsec_AIzq42FKac3uwqpm",
   network: "near",
   symbol: "USDT",
   recipient: "jimmygu.near",
@@ -29,10 +27,6 @@ export function parseDemoConfig(value: unknown): DemoConfig {
   const record = value as Record<string, unknown>;
   return {
     apiKey: typeof record.apiKey === "string" ? record.apiKey : "",
-    webhookSecret:
-      typeof record.webhookSecret === "string" && record.webhookSecret
-        ? record.webhookSecret
-        : SIMPLE_MODE_DEFAULTS.webhookSecret,
     network:
       typeof record.network === "string" && record.network
         ? record.network
@@ -68,7 +62,7 @@ export function getDemoConfigSnapshot(): DemoConfig {
   } catch {
     cachedRaw = null;
     cachedConfig = DEFAULT_DEMO_CONFIG;
-    return cachedConfig;
+    return DEFAULT_DEMO_CONFIG;
   }
 }
 
@@ -97,7 +91,6 @@ export function resolveCheckoutConfig(
 export function isDemoConfigReady(config: DemoConfig): boolean {
   return Boolean(
     config.apiKey.trim() &&
-      config.webhookSecret.trim() &&
       config.network.trim() &&
       config.symbol.trim() &&
       config.recipient.trim(),
