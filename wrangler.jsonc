@@ -6,7 +6,6 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "vars": {
     "STABLEFLOW_API_BASE": "https://test-api.stableflow.ai",
-    "STABLEFLOW_PAY_HOST": "https://v3.pay.stableflow.ai",
     "NEXT_PUBLIC_APP_URL": "https://demo.pay.jimmygu.com"
   },
   "assets": {

@@ -6,7 +6,6 @@ interface __BaseEnv_CloudflareEnv {
 	ASSETS: Fetcher;
 	NEXTJS_ENV: string;
 	STABLEFLOW_API_BASE: string;
-	STABLEFLOW_PAY_HOST: string;
 	STABLEFLOW_API_KEY: string;
 	STABLEFLOW_WEBHOOK_SECRET: string;
 	CHECKOUT_NETWORK: string;
@@ -23,7 +22,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "NEXTJS_ENV" | "STABLEFLOW_API_BASE" | "STABLEFLOW_PAY_HOST" | "STABLEFLOW_API_KEY" | "STABLEFLOW_WEBHOOK_SECRET" | "CHECKOUT_NETWORK" | "CHECKOUT_SYMBOL" | "CHECKOUT_RECIPIENT" | "NEXT_PUBLIC_APP_URL">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "NEXTJS_ENV" | "STABLEFLOW_API_BASE" | "STABLEFLOW_API_KEY" | "STABLEFLOW_WEBHOOK_SECRET" | "CHECKOUT_NETWORK" | "CHECKOUT_SYMBOL" | "CHECKOUT_RECIPIENT" | "NEXT_PUBLIC_APP_URL">> {}
 }
 
 // Begin runtime types

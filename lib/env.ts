@@ -1,6 +1,5 @@
 export type AppEnv = {
   STABLEFLOW_API_BASE: string;
-  STABLEFLOW_PAY_HOST: string;
   NEXT_PUBLIC_APP_URL: string;
 };
 
@@ -22,10 +21,6 @@ export function getAppEnv(): AppEnv {
     STABLEFLOW_API_BASE: requiredUrl(
       "STABLEFLOW_API_BASE",
       process.env.STABLEFLOW_API_BASE,
-    ),
-    STABLEFLOW_PAY_HOST: requiredUrl(
-      "STABLEFLOW_PAY_HOST",
-      process.env.STABLEFLOW_PAY_HOST,
     ),
     NEXT_PUBLIC_APP_URL: requiredUrl(
       "NEXT_PUBLIC_APP_URL",

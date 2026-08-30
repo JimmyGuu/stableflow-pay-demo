@@ -2,5 +2,4 @@
 NEXTJS_ENV=development
 
 STABLEFLOW_API_BASE=https://test-api.stableflow.ai
-STABLEFLOW_PAY_HOST=https://pay.stableflow.ai
 NEXT_PUBLIC_APP_URL=http://localhost:3000

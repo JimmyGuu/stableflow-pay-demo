@@ -21,7 +21,6 @@ Server env (hosts only):
 | Variable | Purpose |
 | --- | --- |
 | `STABLEFLOW_API_BASE` | StableFlow API host |
-| `STABLEFLOW_PAY_HOST` | StableFlow Pay UI host (`/checkout?sessionId=`) |
 | `NEXT_PUBLIC_APP_URL` | This demo origin, used as `success_url` |
 
 Demo configuration is entered in the browser UI and stored in `localStorage`:

@@ -8,6 +8,7 @@ export type CheckoutSession = {
   out_order_no: string;
   recipient: string;
   session_id: string;
+  session_url: string;
   status: string;
   success_url: string;
   symbol: string;
@@ -30,13 +31,6 @@ type ApiEnvelope<T> = {
 export function generateOutOrderNo(): string {
   const rand = Math.random().toString(36).slice(2, 10);
   return `demo_${Date.now()}_${rand}`;
-}
-
-export function buildCheckoutUrl(sessionId: string): string {
-  const env = getAppEnv();
-  const url = new URL("/checkout", env.STABLEFLOW_PAY_HOST);
-  url.searchParams.set("sessionId", sessionId);
-  return url.toString();
 }
 
 export async function createCheckoutSession(
@@ -72,7 +66,7 @@ export async function createCheckoutSession(
 
   const payload = (await response.json()) as ApiEnvelope<CheckoutSession>;
 
-  if (!response.ok || payload.code !== 200 || !payload.data?.session_id) {
+  if (!response.ok || payload.code !== 200 || !payload.data?.session_url) {
     const message =
       payload.message ||
       `Failed to create checkout session (HTTP ${response.status})`;
@@ -82,6 +76,6 @@ export async function createCheckoutSession(
   const session = payload.data;
   return {
     session,
-    checkoutUrl: buildCheckoutUrl(session.session_id),
+    checkoutUrl: session.session_url,
   };
 }
