@@ -1,26 +1,15 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-export type OrderStatus = "pending" | "success" | "failed" | "abandoned";
+import type { OrderRow, OrderStatus } from "@/lib/order";
 
-export type OrderRow = {
-  id: string;
-  out_order_no: string;
-  session_id: string | null;
-  amount: string;
-  network: string;
-  symbol: string;
-  recipient: string;
-  status: OrderStatus;
-  success_url: string | null;
-  created_at: string;
-  updated_at: string;
-  expires_at: string | null;
-};
+export type { OrderRow, OrderStatus };
 
 export type InsertOrderInput = {
   id: string;
   outOrderNo: string;
   sessionId: string;
+  sessionUrl: string;
+  paymentsId: string | null;
   amount: string;
   network: string;
   symbol: string;
@@ -47,14 +36,16 @@ export async function insertOrder(
   await db
     .prepare(
       `INSERT INTO orders (
-        id, out_order_no, session_id, amount, network, symbol, recipient,
-        status, success_url, created_at, updated_at, expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        id, out_order_no, session_id, session_url, payments_id, amount, network,
+        symbol, recipient, status, success_url, created_at, updated_at, expires_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       input.id,
       input.outOrderNo,
       input.sessionId,
+      input.sessionUrl,
+      input.paymentsId,
       input.amount,
       input.network,
       input.symbol,
@@ -68,53 +59,99 @@ export async function insertOrder(
     .run();
 }
 
+export async function listOrders(
+  db: D1Database,
+  limit = 50,
+): Promise<OrderRow[]> {
+  const result = await db
+    .prepare(
+      `SELECT * FROM orders ORDER BY created_at DESC LIMIT ?`,
+    )
+    .bind(limit)
+    .all<OrderRow>();
+
+  return (result.results ?? []).map(normalizeOrderRow);
+}
+
 export async function getOrderBySessionId(
   db: D1Database,
   sessionId: string,
 ): Promise<OrderRow | null> {
-  return db
+  const row = await db
     .prepare(`SELECT * FROM orders WHERE session_id = ? LIMIT 1`)
     .bind(sessionId)
     .first<OrderRow>();
+  return row ? normalizeOrderRow(row) : null;
 }
 
 export async function getOrderByOutOrderNo(
   db: D1Database,
   outOrderNo: string,
 ): Promise<OrderRow | null> {
-  return db
+  const row = await db
     .prepare(`SELECT * FROM orders WHERE out_order_no = ? LIMIT 1`)
     .bind(outOrderNo)
     .first<OrderRow>();
+  return row ? normalizeOrderRow(row) : null;
+}
+
+export async function getOrderByPaymentsId(
+  db: D1Database,
+  paymentsId: string,
+): Promise<OrderRow | null> {
+  const row = await db
+    .prepare(`SELECT * FROM orders WHERE payments_id = ? LIMIT 1`)
+    .bind(paymentsId)
+    .first<OrderRow>();
+  return row ? normalizeOrderRow(row) : null;
+}
+
+export async function findOrderForWebhook(params: {
+  db: D1Database;
+  outOrderNo?: string | null;
+  sessionId?: string | null;
+  paymentsId?: string | null;
+}): Promise<OrderRow | null> {
+  const { db, outOrderNo, sessionId, paymentsId } = params;
+  if (outOrderNo) {
+    const order = await getOrderByOutOrderNo(db, outOrderNo);
+    if (order) return order;
+  }
+  if (sessionId) {
+    const order = await getOrderBySessionId(db, sessionId);
+    if (order) return order;
+  }
+  if (paymentsId) {
+    const order = await getOrderByPaymentsId(db, paymentsId);
+    if (order) return order;
+  }
+  return null;
 }
 
 export async function updateOrderStatus(params: {
   db: D1Database;
-  sessionId?: string | null;
-  outOrderNo?: string | null;
+  orderId: string;
   status: OrderStatus;
+  paymentsId?: string | null;
   updatedAt: string;
 }): Promise<void> {
-  const { db, sessionId, outOrderNo, status, updatedAt } = params;
-
-  if (sessionId) {
+  const { db, orderId, status, paymentsId, updatedAt } = params;
+  if (paymentsId) {
     await db
       .prepare(
-        `UPDATE orders SET status = ?, updated_at = ? WHERE session_id = ?`,
+        `UPDATE orders
+         SET status = ?, payments_id = COALESCE(?, payments_id), updated_at = ?
+         WHERE id = ?`,
       )
-      .bind(status, updatedAt, sessionId)
+      .bind(status, paymentsId, updatedAt, orderId)
       .run();
     return;
   }
 
-  if (outOrderNo) {
-    await db
-      .prepare(
-        `UPDATE orders SET status = ?, updated_at = ? WHERE out_order_no = ?`,
-      )
-      .bind(status, updatedAt, outOrderNo)
-      .run();
-  }
+  await db
+    .prepare(`UPDATE orders SET status = ?, updated_at = ? WHERE id = ?`)
+    .bind(status, updatedAt, orderId)
+    .run();
 }
 
 export type WebhookEventRow = {
@@ -174,4 +211,13 @@ export async function insertWebhookEventIfNew(params: {
     .run();
 
   return true;
+}
+
+function normalizeOrderRow(row: OrderRow): OrderRow {
+  return {
+    ...row,
+    session_url: row.session_url ?? null,
+    payments_id: row.payments_id ?? null,
+    status: String(row.status) === "abandoned" ? "expired" : row.status,
+  };
 }

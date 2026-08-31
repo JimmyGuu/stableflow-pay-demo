@@ -1,13 +1,14 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
-import type { OrderStatus } from "@/lib/db";
+import type { OrderStatus } from "@/lib/order";
 
 export type WebhookEvent = {
   id?: string;
   type?: string;
   resourceId?: string;
-  data?: Record<string, unknown>;
+  created_at?: string;
   createdAt?: string;
+  data?: Record<string, unknown>;
 };
 
 export function verifyWebhookSignature(params: {
@@ -47,23 +48,37 @@ export function resolveEventId(
     .digest("hex");
 }
 
-export function mapEventTypeToOrderStatus(
-  eventType: string | undefined,
-): OrderStatus | null {
-  if (!eventType) return null;
+export function mapWebhookToOrderStatus(params: {
+  dataStatus?: string | null;
+  eventType?: string | null;
+}): OrderStatus | null {
+  const values = [params.dataStatus, params.eventType]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.trim().toLowerCase());
 
-  switch (eventType) {
-    case "payment.success":
-    case "checkout.session.completed":
+  for (const value of values) {
+    if (
+      value === "success" ||
+      value === "completed" ||
+      value === "payment.success" ||
+      value === "checkout.session.completed"
+    ) {
       return "success";
-    case "payment.failed":
+    }
+    if (value === "failed" || value === "payment.failed") {
       return "failed";
-    case "payment.abandoned":
-    case "checkout.session.expired":
-      return "abandoned";
-    default:
-      return null;
+    }
+    if (
+      value === "expired" ||
+      value === "abandoned" ||
+      value === "payment.abandoned" ||
+      value === "checkout.session.expired"
+    ) {
+      return "expired";
+    }
   }
+
+  return null;
 }
 
 function asString(value: unknown): string | null {
@@ -73,6 +88,8 @@ function asString(value: unknown): string | null {
 export function extractOrderRefs(event: WebhookEvent): {
   sessionId: string | null;
   outOrderNo: string | null;
+  paymentsId: string | null;
+  dataStatus: string | null;
 } {
   const data = event.data ?? {};
   return {
@@ -81,5 +98,7 @@ export function extractOrderRefs(event: WebhookEvent): {
       asString(data.session_id) ??
       asString(event.resourceId),
     outOrderNo: asString(data.outOrderNo) ?? asString(data.out_order_no),
+    paymentsId: asString(data.paymentsId) ?? asString(data.payments_id),
+    dataStatus: asString(data.status),
   };
 }

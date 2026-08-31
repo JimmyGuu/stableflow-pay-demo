@@ -7,6 +7,7 @@ export type CheckoutSession = {
   expires_at: string;
   network: string;
   out_order_no: string;
+  payments_id: string;
   recipient: string;
   session_id: string;
   session_url: string;
@@ -21,6 +22,7 @@ export type CreateCheckoutSessionInput = {
   network: string;
   symbol: string;
   recipient: string;
+  successUrl: string;
 };
 
 type ApiEnvelope<T> = {
@@ -60,14 +62,13 @@ export async function createCheckoutSession(
 }> {
   const env = getAppEnv();
   const outOrderNo = generateOutOrderNo();
-  const successUrl = new URL("/success", env.NEXT_PUBLIC_APP_URL).toString();
 
   const body = {
     amount: input.amount,
     network: input.network,
     out_order_no: outOrderNo,
     recipient: input.recipient,
-    success_url: successUrl,
+    success_url: input.successUrl,
     symbol: input.symbol,
   };
 

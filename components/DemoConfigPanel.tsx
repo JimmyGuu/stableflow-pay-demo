@@ -2,13 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { validateAddress } from "@/lib/address";
 import {
   chainsForReceive,
   resolveCheckoutPair,
   symbolsForNetwork,
   type PayToken,
 } from "@/lib/checkout-options";
+import { shouldValidateCheckoutRecipient } from "@/lib/config";
 import type { DemoConfig } from "@/lib/demo-config";
+import { defaultSuccessUrl, isValidHttpUrl } from "@/lib/url";
 
 type DemoConfigPanelProps = {
   config: DemoConfig;
@@ -65,6 +68,12 @@ export function DemoConfigPanel({
   }, [fullMode]);
 
   useEffect(() => {
+    if (!fullMode) return;
+    if (config.successUrl) return;
+    onChange({ ...config, successUrl: defaultSuccessUrl() });
+  }, [fullMode, config, onChange]);
+
+  useEffect(() => {
     if (!fullMode || tokensLoading || tokensError || tokens.length === 0) {
       return;
     }
@@ -88,6 +97,15 @@ export function DemoConfigPanel({
     [tokens, config.network],
   );
   const selectsDisabled = tokensLoading || Boolean(tokensError);
+  const recipientError =
+    shouldValidateCheckoutRecipient() && config.recipient.trim()
+      ? validateAddress(config.recipient, config.network).error
+      : undefined;
+  const successUrlError = config.successUrl.trim()
+    ? isValidHttpUrl(config.successUrl)
+      ? undefined
+      : "Enter a valid http(s) URL"
+    : undefined;
 
   function update<K extends keyof DemoConfig>(key: K, value: DemoConfig[K]) {
     onChange({ ...config, [key]: value });
@@ -186,6 +204,30 @@ export function DemoConfigPanel({
                 onChange={(event) => update("recipient", event.target.value)}
                 className={fieldClassName}
               />
+              {recipientError ? (
+                <p className="text-sm text-red-600" role="alert">
+                  {recipientError}
+                </p>
+              ) : null}
+            </label>
+
+            <label className="block space-y-2">
+              <span className="text-sm font-semibold text-zinc-900">
+                SUCCESS_URL
+              </span>
+              <input
+                type="url"
+                autoComplete="off"
+                placeholder="https://example.com/success"
+                value={config.successUrl}
+                onChange={(event) => update("successUrl", event.target.value)}
+                className={fieldClassName}
+              />
+              {successUrlError ? (
+                <p className="text-sm text-red-600" role="alert">
+                  {successUrlError}
+                </p>
+              ) : null}
             </label>
           </>
         ) : null}

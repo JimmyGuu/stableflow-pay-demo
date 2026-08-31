@@ -1,3 +1,7 @@
+import { isAddressValid } from "@/lib/address";
+import { shouldValidateCheckoutRecipient } from "@/lib/config";
+import { isValidHttpUrl } from "@/lib/url";
+
 export const DEMO_CONFIG_STORAGE_KEY = "stableflow-pay-demo.config";
 
 export type DemoConfig = {
@@ -5,6 +9,7 @@ export type DemoConfig = {
   network: string;
   symbol: string;
   recipient: string;
+  successUrl: string;
 };
 
 /** Defaults used when `full=1` is absent (simple demo mode). */
@@ -12,6 +17,7 @@ export const SIMPLE_MODE_DEFAULTS: Omit<DemoConfig, "apiKey"> = {
   network: "near",
   symbol: "USDT",
   recipient: "stableflow.near",
+  successUrl: "",
 };
 
 export const DEFAULT_DEMO_CONFIG: DemoConfig = {
@@ -39,6 +45,8 @@ export function parseDemoConfig(value: unknown): DemoConfig {
       typeof record.recipient === "string" && record.recipient
         ? record.recipient
         : SIMPLE_MODE_DEFAULTS.recipient,
+    successUrl:
+      typeof record.successUrl === "string" ? record.successUrl : "",
   };
 }
 
@@ -88,11 +96,19 @@ export function resolveCheckoutConfig(
   };
 }
 
-export function isDemoConfigReady(config: DemoConfig): boolean {
-  return Boolean(
+export function isDemoConfigReady(
+  config: DemoConfig,
+  fullMode: boolean,
+): boolean {
+  const recipientOk = shouldValidateCheckoutRecipient()
+    ? isAddressValid(config.recipient, config.network)
+    : Boolean(config.recipient.trim());
+  const baseReady = Boolean(
     config.apiKey.trim() &&
       config.network.trim() &&
       config.symbol.trim() &&
-      config.recipient.trim(),
+      recipientOk,
   );
+  if (!fullMode) return baseReady;
+  return baseReady && isValidHttpUrl(config.successUrl);
 }

@@ -24,6 +24,7 @@ Server env:
 | --- | --- |
 | `STABLEFLOW_API_BASE` | StableFlow API host |
 | `NEXT_PUBLIC_APP_URL` | This demo origin, used as `success_url` |
+| `NEXT_PUBLIC_VALIDATE_CHECKOUT_RECIPIENT` | `true` to validate `CHECKOUT_RECIPIENT` against the selected network. Default `false` (also in `wrangler.jsonc` `vars`) |
 | `STABLEFLOW_WEBHOOK_SECRET` | HMAC signing secret for incoming webhooks (server-only) |
 
 Demo configuration entered in the browser UI (stored in `localStorage`):
@@ -31,9 +32,12 @@ Demo configuration entered in the browser UI (stored in `localStorage`):
 - `STABLEFLOW_API_KEY`
 - `CHECKOUT_NETWORK` (chains that have at least one receive-supported token)
 - `CHECKOUT_SYMBOL` (receive-supported tokens for the selected network, from `GET /v1/pay/tokens`)
-- `CHECKOUT_RECIPIENT`
+- `CHECKOUT_RECIPIENT` (required; network format check is off unless `NEXT_PUBLIC_VALIDATE_CHECKOUT_RECIPIENT=true`)
+- `SUCCESS_URL` (must be an `http:` or `https:` URL; simple mode uses `NEXT_PUBLIC_APP_URL/success`)
 
-On checkout, the API key / network / symbol / recipient are sent to the server route (demo-only). Webhook verification always uses `STABLEFLOW_WEBHOOK_SECRET` from the server environment.
+On checkout, the API key / network / symbol / recipient / success URL are sent to the server route (demo-only). Webhook verification always uses `STABLEFLOW_WEBHOOK_SECRET` from the server environment.
+
+The home page lists **Payment History** (D1 `orders`). Raw webhook deliveries are on `/webhooks`.
 
 **Production apps must not put API keys in the frontend.** The page shows this warning for demo viewers.
 
@@ -63,7 +67,7 @@ D1 binding in `wrangler.jsonc`:
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Fill the demo configuration, choose an amount, then start checkout.
+Open [http://localhost:3000](http://localhost:3000). Fill the demo configuration, choose an amount, then start checkout. Webhook event logs: [http://localhost:3000/webhooks](http://localhost:3000/webhooks).
 
 ## Webhooks
 
@@ -78,13 +82,30 @@ Verification:
 - signature: `HMAC-SHA256(secret, `${timestamp}.${rawBody}`)` hex digest
 - verify against the **raw body**, then parse JSON
 
-Successful deliveries insert into `webhook_events` (idempotent by event id) and update matching `orders.status`.
+Successful deliveries insert into `webhook_events` (idempotent by event id). The body is:
+
+```json
+{
+  "id": "evt_...",
+  "type": "payment.success",
+  "created_at": "...",
+  "data": {
+    "payments_id": "...",
+    "status": "success",
+    "link_id": "...",
+    "session_id": "...",
+    "out_order_no": "..."
+  }
+}
+```
+
+Matching `orders` rows are updated by `out_order_no`, then `session_id`, then `payments_id`. Status comes from `data.status` (fallback: `type`). Pending orders that are expired, successful, or failed cannot be paid again.
 
 ## Success redirect
 
-After payment, StableFlow Pay redirects to:
+After payment, StableFlow Pay redirects to the configured `SUCCESS_URL` (default `{NEXT_PUBLIC_APP_URL}/success`) with query:
 
-`{NEXT_PUBLIC_APP_URL}/success?amount=&network=&expires_at=&created_at=&out_order_no=&recipient=&session_id=&status=&symbol=`
+`amount=&network=&expires_at=&created_at=&out_order_no=&recipient=&session_id=&status=&symbol=`
 
 ## Cloudflare deploy
 

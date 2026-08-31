@@ -1,26 +1,29 @@
 /** Checkout destination options aligned with StableFlow Pay v3. */
 
+export type ChainKind = "evm" | "near" | "solana" | "tron";
+
 export type ChainOption = {
   blockchain: string;
   chainName: string;
+  chainKind: ChainKind;
 };
 
 /** Mirrors v3 FIXED_CHAINS blockchain codes used for payout destination. */
 export const FIXED_CHAINS: ChainOption[] = [
-  { blockchain: "eth", chainName: "Ethereum" },
-  { blockchain: "base", chainName: "Base" },
-  { blockchain: "arb", chainName: "Arbitrum" },
-  { blockchain: "op", chainName: "Optimism" },
-  { blockchain: "pol", chainName: "Polygon" },
-  { blockchain: "bsc", chainName: "BNB Chain" },
-  { blockchain: "avax", chainName: "Avalanche" },
-  { blockchain: "gnosis", chainName: "Gnosis" },
-  { blockchain: "scroll", chainName: "Scroll" },
-  { blockchain: "xlayer", chainName: "X Layer" },
-  { blockchain: "bera", chainName: "Berachain" },
-  { blockchain: "near", chainName: "Near" },
-  { blockchain: "sol", chainName: "Solana" },
-  { blockchain: "tron", chainName: "Tron" },
+  { blockchain: "eth", chainName: "Ethereum", chainKind: "evm" },
+  { blockchain: "base", chainName: "Base", chainKind: "evm" },
+  { blockchain: "arb", chainName: "Arbitrum", chainKind: "evm" },
+  { blockchain: "op", chainName: "Optimism", chainKind: "evm" },
+  { blockchain: "pol", chainName: "Polygon", chainKind: "evm" },
+  { blockchain: "bsc", chainName: "BNB Chain", chainKind: "evm" },
+  { blockchain: "avax", chainName: "Avalanche", chainKind: "evm" },
+  { blockchain: "gnosis", chainName: "Gnosis", chainKind: "evm" },
+  { blockchain: "scroll", chainName: "Scroll", chainKind: "evm" },
+  { blockchain: "xlayer", chainName: "X Layer", chainKind: "evm" },
+  { blockchain: "bera", chainName: "Berachain", chainKind: "evm" },
+  { blockchain: "near", chainName: "Near", chainKind: "near" },
+  { blockchain: "sol", chainName: "Solana", chainKind: "solana" },
+  { blockchain: "tron", chainName: "Tron", chainKind: "tron" },
 ];
 
 /** Mirrors v3 PAYOUT_SYMBOLS. */

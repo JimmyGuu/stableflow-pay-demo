@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
+  findOrderForWebhook,
   getDB,
   insertWebhookEventIfNew,
   listWebhookEvents,
@@ -9,7 +10,7 @@ import {
 import { getWebhookSecret } from "@/lib/env";
 import {
   extractOrderRefs,
-  mapEventTypeToOrderStatus,
+  mapWebhookToOrderStatus,
   resolveEventId,
   verifyWebhookSignature,
   type WebhookEvent,
@@ -92,29 +93,39 @@ export async function POST(request: Request) {
   const eventType = event.type || headerEventType || "unknown";
   const eventId = resolveEventId(event, timestamp, rawBody);
   const receivedAt = new Date().toISOString();
+  const refs = extractOrderRefs(event);
   const db = await getDB();
 
   const inserted = await insertWebhookEventIfNew({
     db,
     id: eventId,
     type: eventType,
-    resourceId:
-      typeof event.resourceId === "string" ? event.resourceId : null,
+    resourceId: refs.sessionId ?? refs.paymentsId,
     payloadJson: rawBody,
     receivedAt,
   });
 
   if (inserted) {
-    const status = mapEventTypeToOrderStatus(eventType);
+    const status = mapWebhookToOrderStatus({
+      dataStatus: refs.dataStatus,
+      eventType,
+    });
     if (status) {
-      const refs = extractOrderRefs(event);
-      await updateOrderStatus({
+      const order = await findOrderForWebhook({
         db,
-        sessionId: refs.sessionId,
         outOrderNo: refs.outOrderNo,
-        status,
-        updatedAt: receivedAt,
+        sessionId: refs.sessionId,
+        paymentsId: refs.paymentsId,
       });
+      if (order) {
+        await updateOrderStatus({
+          db,
+          orderId: order.id,
+          status,
+          paymentsId: refs.paymentsId,
+          updatedAt: receivedAt,
+        });
+      }
     }
   }
 

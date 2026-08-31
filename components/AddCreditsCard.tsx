@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   formatUsd,
@@ -13,9 +13,10 @@ import { isDemoConfigReady } from "@/lib/demo-config";
 
 type AddCreditsCardProps = {
   config: DemoConfig;
+  fullMode: boolean;
 };
 
-export function AddCreditsCard({ config }: AddCreditsCardProps) {
+export function AddCreditsCard({ config, fullMode }: AddCreditsCardProps) {
   const [preset, setPreset] = useState<number | null>(1);
   const [custom, setCustom] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,15 @@ export function AddCreditsCard({ config }: AddCreditsCardProps) {
 
   const customAmount = parsePositiveAmount(custom);
   const amount = customAmount !== null ? customAmount : preset;
-  const configReady = isDemoConfigReady(config);
+  const configReady = isDemoConfigReady(config, fullMode);
+
+  useEffect(() => {
+    function onPageShow() {
+      setLoading(false);
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   async function handleSubmit() {
     if (amount === null || loading || !configReady) return;
@@ -41,6 +50,7 @@ export function AddCreditsCard({ config }: AddCreditsCardProps) {
           network: config.network,
           symbol: config.symbol,
           recipient: config.recipient.trim(),
+          successUrl: fullMode ? config.successUrl.trim() : undefined,
         }),
       });
 

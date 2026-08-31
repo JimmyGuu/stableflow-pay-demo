@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 
+import { isAddressValid } from "@/lib/address";
 import { parsePositiveAmount, toAmountString } from "@/lib/amount";
 import {
   isValidReceivePair,
   type PayToken,
 } from "@/lib/checkout-options";
+import { shouldValidateCheckoutRecipient } from "@/lib/config";
 import { getDB, insertOrder } from "@/lib/db";
+import { getAppEnv } from "@/lib/env";
 import { createCheckoutSession, fetchPayTokens } from "@/lib/stableflow";
+import { isValidHttpUrl } from "@/lib/url";
 
 type CreateSessionBody = {
   amount?: string;
@@ -14,7 +18,12 @@ type CreateSessionBody = {
   network?: string;
   symbol?: string;
   recipient?: string;
+  successUrl?: string;
 };
+
+function defaultSuccessUrl(): string {
+  return new URL("/success", getAppEnv().NEXT_PUBLIC_APP_URL).toString();
+}
 
 export async function POST(request: Request) {
   try {
@@ -31,6 +40,7 @@ export async function POST(request: Request) {
     const network = body.network?.trim() ?? "";
     const symbol = body.symbol?.trim() ?? "";
     const recipient = body.recipient?.trim() ?? "";
+    const successUrl = body.successUrl?.trim() || defaultSuccessUrl();
 
     if (!apiKey) {
       return NextResponse.json(
@@ -38,9 +48,24 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    if (!isValidHttpUrl(successUrl)) {
+      return NextResponse.json(
+        { error: "A valid http(s) success URL is required" },
+        { status: 400 },
+      );
+    }
     if (!recipient) {
       return NextResponse.json(
         { error: "Recipient is required" },
+        { status: 400 },
+      );
+    }
+    if (
+      shouldValidateCheckoutRecipient() &&
+      !isAddressValid(recipient, network)
+    ) {
+      return NextResponse.json(
+        { error: "Recipient address does not match the selected network" },
         { status: 400 },
       );
     }
@@ -67,6 +92,7 @@ export async function POST(request: Request) {
       network,
       symbol,
       recipient,
+      successUrl,
     });
     const now = new Date().toISOString();
     const db = await getDB();
@@ -75,6 +101,8 @@ export async function POST(request: Request) {
       id: session.out_order_no,
       outOrderNo: session.out_order_no,
       sessionId: session.session_id,
+      sessionUrl: session.session_url,
+      paymentsId: session.payments_id?.trim() || null,
       amount: session.amount,
       network: session.network,
       symbol: session.symbol,
