@@ -1,8 +1,12 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+
 import {
-  FIXED_CHAINS,
-  PAYOUT_SYMBOLS,
+  chainsForReceive,
+  resolveCheckoutPair,
+  symbolsForNetwork,
+  type PayToken,
 } from "@/lib/checkout-options";
 import type { DemoConfig } from "@/lib/demo-config";
 
@@ -13,15 +17,85 @@ type DemoConfigPanelProps = {
 };
 
 const fieldClassName =
-  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-400";
+  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400";
 
 export function DemoConfigPanel({
   config,
   fullMode,
   onChange,
 }: DemoConfigPanelProps) {
+  const [tokens, setTokens] = useState<PayToken[]>([]);
+  const [tokensLoading, setTokensLoading] = useState(fullMode);
+  const [tokensError, setTokensError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!fullMode) return;
+
+    let cancelled = false;
+
+    async function loadTokens() {
+      setTokensLoading(true);
+      setTokensError(null);
+      try {
+        const response = await fetch("/api/tokens");
+        const payload = (await response.json()) as {
+          tokens?: PayToken[];
+          error?: string;
+        };
+        if (!response.ok || !Array.isArray(payload.tokens)) {
+          throw new Error(payload.error || "Unable to load tokens");
+        }
+        if (!cancelled) setTokens(payload.tokens);
+      } catch (error) {
+        if (!cancelled) {
+          setTokens([]);
+          setTokensError(
+            error instanceof Error ? error.message : "Unable to load tokens",
+          );
+        }
+      } finally {
+        if (!cancelled) setTokensLoading(false);
+      }
+    }
+
+    void loadTokens();
+    return () => {
+      cancelled = true;
+    };
+  }, [fullMode]);
+
+  useEffect(() => {
+    if (!fullMode || tokensLoading || tokensError || tokens.length === 0) {
+      return;
+    }
+    const next = resolveCheckoutPair(tokens, config.network, config.symbol);
+    if (next.network === config.network && next.symbol === config.symbol) {
+      return;
+    }
+    onChange({ ...config, ...next });
+  }, [
+    fullMode,
+    tokens,
+    tokensLoading,
+    tokensError,
+    config,
+    onChange,
+  ]);
+
+  const chains = useMemo(() => chainsForReceive(tokens), [tokens]);
+  const symbols = useMemo(
+    () => symbolsForNetwork(tokens, config.network),
+    [tokens, config.network],
+  );
+  const selectsDisabled = tokensLoading || Boolean(tokensError);
+
   function update<K extends keyof DemoConfig>(key: K, value: DemoConfig[K]) {
     onChange({ ...config, [key]: value });
+  }
+
+  function handleNetworkChange(network: string) {
+    const next = resolveCheckoutPair(tokens, network, config.symbol);
+    onChange({ ...config, ...next });
   }
 
   return (
@@ -58,10 +132,11 @@ export function DemoConfigPanel({
               </span>
               <select
                 value={config.network}
-                onChange={(event) => update("network", event.target.value)}
+                disabled={selectsDisabled}
+                onChange={(event) => handleNetworkChange(event.target.value)}
                 className={fieldClassName}
               >
-                {FIXED_CHAINS.map((chain) => (
+                {chains.map((chain) => (
                   <option key={chain.blockchain} value={chain.blockchain}>
                     {chain.chainName} ({chain.blockchain})
                   </option>
@@ -75,16 +150,29 @@ export function DemoConfigPanel({
               </span>
               <select
                 value={config.symbol}
+                disabled={selectsDisabled}
                 onChange={(event) => update("symbol", event.target.value)}
                 className={fieldClassName}
               >
-                {PAYOUT_SYMBOLS.map((symbol) => (
+                {symbols.map((symbol) => (
                   <option key={symbol} value={symbol}>
                     {symbol}
                   </option>
                 ))}
               </select>
             </label>
+
+            {tokensLoading ? (
+              <p className="text-sm text-zinc-500" role="status">
+                Loading supported assets…
+              </p>
+            ) : null}
+
+            {tokensError ? (
+              <p className="text-sm text-red-600" role="alert">
+                {tokensError}
+              </p>
+            ) : null}
 
             <label className="block space-y-2">
               <span className="text-sm font-semibold text-zinc-900">

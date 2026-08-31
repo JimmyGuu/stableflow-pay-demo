@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 
 import { parsePositiveAmount, toAmountString } from "@/lib/amount";
 import {
-  isValidCheckoutNetwork,
-  isValidCheckoutSymbol,
+  isValidReceivePair,
+  type PayToken,
 } from "@/lib/checkout-options";
 import { getDB, insertOrder } from "@/lib/db";
-import { createCheckoutSession } from "@/lib/stableflow";
+import { createCheckoutSession, fetchPayTokens } from "@/lib/stableflow";
 
 type CreateSessionBody = {
   amount?: string;
@@ -38,21 +38,24 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (!isValidCheckoutNetwork(network)) {
-      return NextResponse.json(
-        { error: "Invalid checkout network" },
-        { status: 400 },
-      );
-    }
-    if (!isValidCheckoutSymbol(symbol)) {
-      return NextResponse.json(
-        { error: "Invalid checkout symbol" },
-        { status: 400 },
-      );
-    }
     if (!recipient) {
       return NextResponse.json(
         { error: "Recipient is required" },
+        { status: 400 },
+      );
+    }
+
+    let tokens: PayToken[];
+    try {
+      tokens = await fetchPayTokens();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to load tokens";
+      return NextResponse.json({ error: message }, { status: 502 });
+    }
+    if (!isValidReceivePair(tokens, network, symbol)) {
+      return NextResponse.json(
+        { error: "Invalid checkout network/symbol pair" },
         { status: 400 },
       );
     }

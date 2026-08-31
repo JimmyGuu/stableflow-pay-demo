@@ -29,8 +29,8 @@ Server env:
 Demo configuration entered in the browser UI (stored in `localStorage`):
 
 - `STABLEFLOW_API_KEY`
-- `CHECKOUT_NETWORK` (dropdown from v3 `FIXED_CHAINS`)
-- `CHECKOUT_SYMBOL` (dropdown from v3 `PAYOUT_SYMBOLS`)
+- `CHECKOUT_NETWORK` (chains that have at least one receive-supported token)
+- `CHECKOUT_SYMBOL` (receive-supported tokens for the selected network, from `GET /v1/pay/tokens`)
 - `CHECKOUT_RECIPIENT`
 
 On checkout, the API key / network / symbol / recipient are sent to the server route (demo-only). Webhook verification always uses `STABLEFLOW_WEBHOOK_SECRET` from the server environment.

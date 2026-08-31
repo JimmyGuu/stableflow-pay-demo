@@ -1,3 +1,4 @@
+import { parsePayTokens, type PayToken } from "@/lib/checkout-options";
 import { getAppEnv } from "@/lib/env";
 
 export type CheckoutSession = {
@@ -31,6 +32,24 @@ type ApiEnvelope<T> = {
 export function generateOutOrderNo(): string {
   const rand = Math.random().toString(36).slice(2, 10);
   return `demo_${Date.now()}_${rand}`;
+}
+
+export async function fetchPayTokens(): Promise<PayToken[]> {
+  const env = getAppEnv();
+  const response = await fetch(`${env.STABLEFLOW_API_BASE}/v1/pay/tokens`);
+  const payload = (await response.json()) as ApiEnvelope<unknown>;
+
+  if (!response.ok || payload.code !== 200) {
+    const message =
+      payload.message || `Failed to load tokens (HTTP ${response.status})`;
+    throw new Error(message);
+  }
+
+  const tokens = parsePayTokens(payload.data);
+  if (tokens.length === 0 && !Array.isArray(payload.data)) {
+    throw new Error("Invalid tokens response");
+  }
+  return tokens;
 }
 
 export async function createCheckoutSession(
