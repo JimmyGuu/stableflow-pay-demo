@@ -7,7 +7,8 @@
   "vars": {
     "STABLEFLOW_API_BASE": "https://test-api.stableflow.ai",
     "NEXT_PUBLIC_APP_URL": "https://demo.pay.stableflow.ai",
-    "NEXT_PUBLIC_VALIDATE_CHECKOUT_RECIPIENT": "false"
+    "NEXT_PUBLIC_VALIDATE_CHECKOUT_RECIPIENT": "false",
+    "NEXT_PUBLIC_PAY_API_KEY": "Rh6nJMMXnqOMJk5jlNHxox7atvIClGGI8fypyXxoweJ8jaZ2VH3atM04ide62RNz"
   },
   "assets": {
     "directory": ".open-next/assets",

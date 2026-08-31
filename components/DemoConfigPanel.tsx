@@ -12,6 +12,7 @@ import {
 import { shouldValidateCheckoutRecipient } from "@/lib/config";
 import type { DemoConfig } from "@/lib/demo-config";
 import { defaultSuccessUrl, isValidHttpUrl } from "@/lib/url";
+import { useDemoConfigStore } from "@/stores/demo-config";
 
 type DemoConfigPanelProps = {
   config: DemoConfig;
@@ -30,6 +31,19 @@ export function DemoConfigPanel({
   const [tokens, setTokens] = useState<PayToken[]>([]);
   const [tokensLoading, setTokensLoading] = useState(fullMode);
   const [tokensError, setTokensError] = useState<string | null>(null);
+  const setConfig = useDemoConfigStore((state) => state.setConfig);
+  const [hydrated, setHydrated] = useState(
+    () => useDemoConfigStore.persist.hasHydrated(),
+  );
+
+  useEffect(() => {
+    if (useDemoConfigStore.persist.hasHydrated()) {
+      setHydrated(true);
+    }
+    return useDemoConfigStore.persist.onFinishHydration(() => {
+      setHydrated(true);
+    });
+  }, []);
 
   useEffect(() => {
     if (!fullMode) return;
@@ -68,27 +82,29 @@ export function DemoConfigPanel({
   }, [fullMode]);
 
   useEffect(() => {
-    if (!fullMode) return;
+    if (!fullMode || !hydrated) return;
     if (config.successUrl) return;
-    onChange({ ...config, successUrl: defaultSuccessUrl() });
-  }, [fullMode, config, onChange]);
+    setConfig({ successUrl: defaultSuccessUrl() });
+  }, [fullMode, hydrated, config.successUrl, setConfig]);
 
   useEffect(() => {
-    if (!fullMode || tokensLoading || tokensError || tokens.length === 0) {
+    if (!fullMode || !hydrated || tokensLoading || tokensError || tokens.length === 0) {
       return;
     }
     const next = resolveCheckoutPair(tokens, config.network, config.symbol);
     if (next.network === config.network && next.symbol === config.symbol) {
       return;
     }
-    onChange({ ...config, ...next });
+    setConfig(next);
   }, [
     fullMode,
+    hydrated,
     tokens,
     tokensLoading,
     tokensError,
-    config,
-    onChange,
+    config.network,
+    config.symbol,
+    setConfig,
   ]);
 
   const chains = useMemo(() => chainsForReceive(tokens), [tokens]);

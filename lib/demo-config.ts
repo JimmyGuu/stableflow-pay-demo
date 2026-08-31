@@ -50,38 +50,6 @@ export function parseDemoConfig(value: unknown): DemoConfig {
   };
 }
 
-let cachedRaw: string | null = null;
-let cachedConfig: DemoConfig = DEFAULT_DEMO_CONFIG;
-
-/** Cached snapshot for useSyncExternalStore (stable referential equality). */
-export function getDemoConfigSnapshot(): DemoConfig {
-  if (typeof window === "undefined") {
-    return DEFAULT_DEMO_CONFIG;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(DEMO_CONFIG_STORAGE_KEY);
-    if (raw === cachedRaw) {
-      return cachedConfig;
-    }
-    cachedRaw = raw;
-    cachedConfig = raw ? parseDemoConfig(JSON.parse(raw)) : DEFAULT_DEMO_CONFIG;
-    return cachedConfig;
-  } catch {
-    cachedRaw = null;
-    cachedConfig = DEFAULT_DEMO_CONFIG;
-    return DEFAULT_DEMO_CONFIG;
-  }
-}
-
-export function saveDemoConfig(config: DemoConfig): void {
-  if (typeof window === "undefined") return;
-  const raw = JSON.stringify(config);
-  window.localStorage.setItem(DEMO_CONFIG_STORAGE_KEY, raw);
-  cachedRaw = raw;
-  cachedConfig = config;
-}
-
 /** Effective config used for checkout / readiness checks. */
 export function resolveCheckoutConfig(
   stored: DemoConfig,

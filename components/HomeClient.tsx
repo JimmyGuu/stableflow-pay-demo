@@ -1,65 +1,42 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect } from "react";
 
 import { AddCreditsCard } from "@/components/AddCreditsCard";
 import { DemoConfigPanel } from "@/components/DemoConfigPanel";
 import { PaymentHistoryTable } from "@/components/PaymentHistoryTable";
 import { DEMO_WEBHOOK_BOUND_API_KEY } from "@/lib/config";
 import {
-  DEFAULT_DEMO_CONFIG,
-  getDemoConfigSnapshot,
   resolveCheckoutConfig,
-  saveDemoConfig,
-  SIMPLE_MODE_DEFAULTS,
   type DemoConfig,
 } from "@/lib/demo-config";
-
-const listeners = new Set<() => void>();
-
-function emitConfigChange() {
-  for (const listener of listeners) {
-    listener();
-  }
-}
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-function getClientSnapshot(): DemoConfig {
-  return getDemoConfigSnapshot();
-}
-
-function getServerSnapshot(): DemoConfig {
-  return DEFAULT_DEMO_CONFIG;
-}
+import { useDemoConfigStore } from "@/stores/demo-config";
 
 type HomeClientProps = {
   fullMode: boolean;
 };
 
 export function HomeClient({ fullMode }: HomeClientProps) {
-  const stored = useSyncExternalStore(
-    subscribe,
-    getClientSnapshot,
-    getServerSnapshot,
-  );
+  useEffect(() => {
+    void useDemoConfigStore.persist.rehydrate();
+  }, []);
+
+  const stored = useDemoConfigStore();
+  const setConfig = useDemoConfigStore((state) => state.setConfig);
   const config = resolveCheckoutConfig(stored, fullMode);
 
   function handleConfigChange(next: DemoConfig) {
     if (fullMode) {
-      saveDemoConfig(next);
-    } else {
-      saveDemoConfig({
-        ...SIMPLE_MODE_DEFAULTS,
+      setConfig({
         apiKey: next.apiKey,
+        network: next.network,
+        symbol: next.symbol,
+        recipient: next.recipient,
+        successUrl: next.successUrl,
       });
+      return;
     }
-    emitConfigChange();
+    setConfig({ apiKey: next.apiKey });
   }
 
   return (
