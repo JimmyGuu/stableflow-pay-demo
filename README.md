@@ -55,7 +55,7 @@ D1 binding in `wrangler.jsonc`:
 
 - binding: `DB`
 - database_name: `pay-demo`
-- database_id: `2aa4f240-7beb-4597-983c-9b47106de5e0`
+- database_id: `15ae7afc-8f82-424c-8f29-a999d4014a4e`
 
 ## Develop
 
