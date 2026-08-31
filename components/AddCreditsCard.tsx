@@ -13,10 +13,9 @@ import { isDemoConfigReady } from "@/lib/demo-config";
 
 type AddCreditsCardProps = {
   config: DemoConfig;
-  fullMode: boolean;
 };
 
-export function AddCreditsCard({ config, fullMode }: AddCreditsCardProps) {
+export function AddCreditsCard({ config }: AddCreditsCardProps) {
   const [preset, setPreset] = useState<number | null>(1);
   const [custom, setCustom] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +23,7 @@ export function AddCreditsCard({ config, fullMode }: AddCreditsCardProps) {
 
   const customAmount = parsePositiveAmount(custom);
   const amount = customAmount !== null ? customAmount : preset;
-  const configReady = isDemoConfigReady(config, fullMode);
+  const configReady = isDemoConfigReady(config);
 
   useEffect(() => {
     function onPageShow() {
@@ -50,7 +49,7 @@ export function AddCreditsCard({ config, fullMode }: AddCreditsCardProps) {
           network: config.network,
           symbol: config.symbol,
           recipient: config.recipient.trim(),
-          successUrl: fullMode ? config.successUrl.trim() : undefined,
+          successUrl: config.successUrl.trim(),
         }),
       });
 
@@ -104,26 +103,7 @@ export function AddCreditsCard({ config, fullMode }: AddCreditsCardProps) {
         </button>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm font-semibold text-zinc-900">Payment Method</p>
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-100 p-1">
-          <button
-            type="button"
-            disabled
-            className="cursor-not-allowed rounded-lg px-3 py-2 text-sm font-medium text-zinc-400"
-          >
-            Credit Card
-          </button>
-          <button
-            type="button"
-            className="rounded-lg bg-white px-3 py-2 text-sm font-medium text-zinc-900 shadow-sm"
-          >
-            Crypto
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {PRESET_AMOUNTS.map((value) => {
           const selected = preset === value && !custom.trim();
           return (

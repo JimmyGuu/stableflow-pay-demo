@@ -33,11 +33,11 @@ Demo configuration entered in the browser UI (stored in `localStorage`):
 - `CHECKOUT_NETWORK` (chains that have at least one receive-supported token)
 - `CHECKOUT_SYMBOL` (receive-supported tokens for the selected network, from `GET /v1/pay/tokens`)
 - `CHECKOUT_RECIPIENT` (required; network format check is off unless `NEXT_PUBLIC_VALIDATE_CHECKOUT_RECIPIENT=true`)
-- `SUCCESS_URL` (must be an `http:` or `https:` URL; simple mode uses `NEXT_PUBLIC_APP_URL/success`)
+- `SUCCESS_URL` (must be an `http:` or `https:` URL; empty values default to `{origin}/success`)
 
 On checkout, the API key / network / symbol / recipient / success URL are sent to the server route (demo-only). Webhook verification always uses `STABLEFLOW_WEBHOOK_SECRET` from the server environment.
 
-The home page lists **Payment History** (D1 `orders`). Raw webhook deliveries are on `/webhooks`.
+Open [`/?test=1`](http://localhost:3000/?test=1) to show the webhook status notice and **Payment History** (D1 `orders`). Those blocks are hidden on the default home page. Raw webhook deliveries are on `/webhooks`.
 
 **Production apps must not put API keys in the frontend.** The page shows this warning for demo viewers.
 

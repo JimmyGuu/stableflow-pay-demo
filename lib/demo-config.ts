@@ -12,7 +12,7 @@ export type DemoConfig = {
   successUrl: string;
 };
 
-/** Defaults used when `full=1` is absent (simple demo mode). */
+/** Default network, symbol, recipient, and success URL when a field is missing. */
 export const SIMPLE_MODE_DEFAULTS: Omit<DemoConfig, "apiKey"> = {
   network: "near",
   symbol: "USDT",
@@ -50,33 +50,15 @@ export function parseDemoConfig(value: unknown): DemoConfig {
   };
 }
 
-/** Effective config used for checkout / readiness checks. */
-export function resolveCheckoutConfig(
-  stored: DemoConfig,
-  fullMode: boolean,
-): DemoConfig {
-  if (fullMode) {
-    return stored;
-  }
-  return {
-    apiKey: stored.apiKey,
-    ...SIMPLE_MODE_DEFAULTS,
-  };
-}
-
-export function isDemoConfigReady(
-  config: DemoConfig,
-  fullMode: boolean,
-): boolean {
+export function isDemoConfigReady(config: DemoConfig): boolean {
   const recipientOk = shouldValidateCheckoutRecipient()
     ? isAddressValid(config.recipient, config.network)
     : Boolean(config.recipient.trim());
-  const baseReady = Boolean(
+  return Boolean(
     config.apiKey.trim() &&
       config.network.trim() &&
       config.symbol.trim() &&
-      recipientOk,
+      recipientOk &&
+      isValidHttpUrl(config.successUrl),
   );
-  if (!fullMode) return baseReady;
-  return baseReady && isValidHttpUrl(config.successUrl);
 }

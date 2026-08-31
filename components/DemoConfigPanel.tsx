@@ -16,20 +16,15 @@ import { useDemoConfigStore } from "@/stores/demo-config";
 
 type DemoConfigPanelProps = {
   config: DemoConfig;
-  fullMode: boolean;
   onChange: (next: DemoConfig) => void;
 };
 
 const fieldClassName =
   "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400";
 
-export function DemoConfigPanel({
-  config,
-  fullMode,
-  onChange,
-}: DemoConfigPanelProps) {
+export function DemoConfigPanel({ config, onChange }: DemoConfigPanelProps) {
   const [tokens, setTokens] = useState<PayToken[]>([]);
-  const [tokensLoading, setTokensLoading] = useState(fullMode);
+  const [tokensLoading, setTokensLoading] = useState(true);
   const [tokensError, setTokensError] = useState<string | null>(null);
   const setConfig = useDemoConfigStore((state) => state.setConfig);
   const [hydrated, setHydrated] = useState(
@@ -46,8 +41,6 @@ export function DemoConfigPanel({
   }, []);
 
   useEffect(() => {
-    if (!fullMode) return;
-
     let cancelled = false;
 
     async function loadTokens() {
@@ -79,16 +72,16 @@ export function DemoConfigPanel({
     return () => {
       cancelled = true;
     };
-  }, [fullMode]);
+  }, []);
 
   useEffect(() => {
-    if (!fullMode || !hydrated) return;
+    if (!hydrated) return;
     if (config.successUrl) return;
     setConfig({ successUrl: defaultSuccessUrl() });
-  }, [fullMode, hydrated, config.successUrl, setConfig]);
+  }, [hydrated, config.successUrl, setConfig]);
 
   useEffect(() => {
-    if (!fullMode || !hydrated || tokensLoading || tokensError || tokens.length === 0) {
+    if (!hydrated || tokensLoading || tokensError || tokens.length === 0) {
       return;
     }
     const next = resolveCheckoutPair(tokens, config.network, config.symbol);
@@ -97,7 +90,6 @@ export function DemoConfigPanel({
     }
     setConfig(next);
   }, [
-    fullMode,
     hydrated,
     tokens,
     tokensLoading,
@@ -138,9 +130,8 @@ export function DemoConfigPanel({
         Demo configuration
       </h2>
       <p className="mt-2 text-sm leading-6 text-zinc-500">
-        {fullMode
-          ? "Values below are used when creating checkout sessions. Webhook signature verification uses STABLEFLOW_WEBHOOK_SECRET from the server environment."
-          : "Enter your StableFlow API key to start a checkout. Other settings use built-in demo defaults."}
+        Values below are used when creating checkout sessions. Webhook signature
+        verification uses STABLEFLOW_WEBHOOK_SECRET from the server environment.
       </p>
 
       <div className="mt-6 space-y-4">
@@ -158,95 +149,91 @@ export function DemoConfigPanel({
           />
         </label>
 
-        {fullMode ? (
-          <>
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-900">
-                CHECKOUT_NETWORK
-              </span>
-              <select
-                value={config.network}
-                disabled={selectsDisabled}
-                onChange={(event) => handleNetworkChange(event.target.value)}
-                className={fieldClassName}
-              >
-                {chains.map((chain) => (
-                  <option key={chain.blockchain} value={chain.blockchain}>
-                    {chain.chainName} ({chain.blockchain})
-                  </option>
-                ))}
-              </select>
-            </label>
+        <label className="block space-y-2">
+          <span className="text-sm font-semibold text-zinc-900">
+            CHECKOUT_NETWORK
+          </span>
+          <select
+            value={config.network}
+            disabled={selectsDisabled}
+            onChange={(event) => handleNetworkChange(event.target.value)}
+            className={fieldClassName}
+          >
+            {chains.map((chain) => (
+              <option key={chain.blockchain} value={chain.blockchain}>
+                {chain.chainName} ({chain.blockchain})
+              </option>
+            ))}
+          </select>
+        </label>
 
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-900">
-                CHECKOUT_SYMBOL
-              </span>
-              <select
-                value={config.symbol}
-                disabled={selectsDisabled}
-                onChange={(event) => update("symbol", event.target.value)}
-                className={fieldClassName}
-              >
-                {symbols.map((symbol) => (
-                  <option key={symbol} value={symbol}>
-                    {symbol}
-                  </option>
-                ))}
-              </select>
-            </label>
+        <label className="block space-y-2">
+          <span className="text-sm font-semibold text-zinc-900">
+            CHECKOUT_SYMBOL
+          </span>
+          <select
+            value={config.symbol}
+            disabled={selectsDisabled}
+            onChange={(event) => update("symbol", event.target.value)}
+            className={fieldClassName}
+          >
+            {symbols.map((symbol) => (
+              <option key={symbol} value={symbol}>
+                {symbol}
+              </option>
+            ))}
+          </select>
+        </label>
 
-            {tokensLoading ? (
-              <p className="text-sm text-zinc-500" role="status">
-                Loading supported assets…
-              </p>
-            ) : null}
-
-            {tokensError ? (
-              <p className="text-sm text-red-600" role="alert">
-                {tokensError}
-              </p>
-            ) : null}
-
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-900">
-                CHECKOUT_RECIPIENT
-              </span>
-              <input
-                type="text"
-                autoComplete="off"
-                placeholder="Recipient address"
-                value={config.recipient}
-                onChange={(event) => update("recipient", event.target.value)}
-                className={fieldClassName}
-              />
-              {recipientError ? (
-                <p className="text-sm text-red-600" role="alert">
-                  {recipientError}
-                </p>
-              ) : null}
-            </label>
-
-            <label className="block space-y-2">
-              <span className="text-sm font-semibold text-zinc-900">
-                SUCCESS_URL
-              </span>
-              <input
-                type="url"
-                autoComplete="off"
-                placeholder="https://example.com/success"
-                value={config.successUrl}
-                onChange={(event) => update("successUrl", event.target.value)}
-                className={fieldClassName}
-              />
-              {successUrlError ? (
-                <p className="text-sm text-red-600" role="alert">
-                  {successUrlError}
-                </p>
-              ) : null}
-            </label>
-          </>
+        {tokensLoading ? (
+          <p className="text-sm text-zinc-500" role="status">
+            Loading supported assets…
+          </p>
         ) : null}
+
+        {tokensError ? (
+          <p className="text-sm text-red-600" role="alert">
+            {tokensError}
+          </p>
+        ) : null}
+
+        <label className="block space-y-2">
+          <span className="text-sm font-semibold text-zinc-900">
+            CHECKOUT_RECIPIENT
+          </span>
+          <input
+            type="text"
+            autoComplete="off"
+            placeholder="Recipient address"
+            value={config.recipient}
+            onChange={(event) => update("recipient", event.target.value)}
+            className={fieldClassName}
+          />
+          {recipientError ? (
+            <p className="text-sm text-red-600" role="alert">
+              {recipientError}
+            </p>
+          ) : null}
+        </label>
+
+        <label className="block space-y-2">
+          <span className="text-sm font-semibold text-zinc-900">
+            SUCCESS_URL
+          </span>
+          <input
+            type="url"
+            autoComplete="off"
+            placeholder="https://example.com/success"
+            value={config.successUrl}
+            onChange={(event) => update("successUrl", event.target.value)}
+            className={fieldClassName}
+          />
+          {successUrlError ? (
+            <p className="text-sm text-red-600" role="alert">
+              {successUrlError}
+            </p>
+          ) : null}
+        </label>
       </div>
     </section>
   );
