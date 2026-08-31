@@ -11,7 +11,7 @@ export type DemoConfig = {
 export const SIMPLE_MODE_DEFAULTS: Omit<DemoConfig, "apiKey"> = {
   network: "near",
   symbol: "USDT",
-  recipient: "jimmygu.near",
+  recipient: "stableflow.near",
 };
 
 export const DEFAULT_DEMO_CONFIG: DemoConfig = {
