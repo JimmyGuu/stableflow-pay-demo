@@ -10,6 +10,7 @@ import {
 } from "@/lib/amount";
 import type { DemoConfig } from "@/lib/demo-config";
 import { isDemoConfigReady } from "@/lib/demo-config";
+import Big from "big.js";
 
 type AddCreditsCardProps = {
   config: DemoConfig;
@@ -36,6 +37,11 @@ export function AddCreditsCard({ config }: AddCreditsCardProps) {
   async function handleSubmit() {
     if (amount === null || loading || !configReady) return;
 
+    if (Big(amount || 0).lt(0.01)) {
+      alert("Amount must be greater than 0.01");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -44,7 +50,7 @@ export function AddCreditsCard({ config }: AddCreditsCardProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: toAmountString(amount),
+          amount: toAmountString(amount, { decimals: 2 }),
           apiKey: config.apiKey.trim(),
           network: config.network,
           symbol: config.symbol,
@@ -81,26 +87,6 @@ export function AddCreditsCard({ config }: AddCreditsCardProps) {
             StableFlow Pay to complete the payment.
           </p>
         </div>
-        <button
-          type="button"
-          aria-label="Close"
-          className="rounded-md p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700"
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-        </button>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -115,11 +101,10 @@ export function AddCreditsCard({ config }: AddCreditsCardProps) {
                 setCustom("");
                 setError(null);
               }}
-              className={`cursor-pointer rounded-xl border px-3 py-3 text-sm font-semibold transition ${
-                selected
-                  ? "border-zinc-950 bg-zinc-950 text-white"
-                  : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300"
-              }`}
+              className={`cursor-pointer rounded-xl border px-3 py-3 text-sm font-semibold transition ${selected
+                ? "border-zinc-950 bg-zinc-950 text-white"
+                : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300"
+                }`}
             >
               ${value}
             </button>

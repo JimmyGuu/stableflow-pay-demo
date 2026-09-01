@@ -40,11 +40,21 @@ export const PAYOUT_SYMBOLS = [
   "NEAR",
 ] as const;
 
+/** USD-pegged symbols: treat as 1:1 when converting Add Credits USD to token amount. */
+export const STABLECOIN_SYMBOLS = ["USDC", "USDT", "DAI"] as const;
+
+const STABLECOIN_SYMBOL_SET = new Set<string>(STABLECOIN_SYMBOLS);
+
+export function isStablecoinSymbol(symbol: string): boolean {
+  return STABLECOIN_SYMBOL_SET.has(symbol.trim().toUpperCase());
+}
+
 export type PayToken = {
   symbol: string;
   network: string;
   decimals: number;
   contract_address: string;
+  price: string;
   support_payment: boolean;
   support_receive: boolean;
 };
@@ -88,15 +98,25 @@ export function symbolsForNetwork(tokens: PayToken[], network: string): string[]
   return [...ranked, ...[...onChain].sort((a, b) => a.localeCompare(b))];
 }
 
+export function findReceiveToken(
+  tokens: PayToken[],
+  network: string,
+  symbol: string,
+): PayToken | null {
+  if (!NETWORK_SET.has(network) || !symbol) return null;
+  return (
+    receiveTokens(tokens).find(
+      (token) => token.network === network && token.symbol === symbol,
+    ) ?? null
+  );
+}
+
 export function isValidReceivePair(
   tokens: PayToken[],
   network: string,
   symbol: string,
 ): boolean {
-  if (!NETWORK_SET.has(network) || !symbol) return false;
-  return receiveTokens(tokens).some(
-    (token) => token.network === network && token.symbol === symbol,
-  );
+  return findReceiveToken(tokens, network, symbol) !== null;
 }
 
 export function resolveCheckoutPair(
@@ -120,6 +140,9 @@ function parsePayToken(value: unknown): PayToken | null {
   if (typeof record.network !== "string" || !record.network.trim()) return null;
   if (typeof record.decimals !== "number") return null;
   if (typeof record.contract_address !== "string") return null;
+  if (typeof record.price !== "string" || !record.price.trim()) return null;
+  const priceNum = Number(record.price);
+  if (!Number.isFinite(priceNum) || priceNum <= 0) return null;
   if (typeof record.support_payment !== "boolean") return null;
   if (typeof record.support_receive !== "boolean") return null;
   return {
@@ -127,6 +150,7 @@ function parsePayToken(value: unknown): PayToken | null {
     network: record.network,
     decimals: record.decimals,
     contract_address: record.contract_address,
+    price: record.price.trim(),
     support_payment: record.support_payment,
     support_receive: record.support_receive,
   };

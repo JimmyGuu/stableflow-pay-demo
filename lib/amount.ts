@@ -1,3 +1,5 @@
+import Big from "big.js";
+
 export const PRESET_AMOUNTS = [1, 5, 10, 25, 50, 100] as const;
 
 export function parsePositiveAmount(value: string): number | null {
@@ -17,6 +19,12 @@ export function formatUsd(amount: number): string {
   });
 }
 
-export function toAmountString(amount: number): string {
-  return amount.toFixed(2);
+export function toAmountString(amount: number, options?: { decimals?: number; }): string {
+  const { decimals = 2 } = options ?? {};
+  return Big(amount || 0).toFixed(decimals, Big.roundDown);
+}
+
+/** Convert USD value to token amount. Checkout sessions allow at most 6 decimals. */
+export function usdToTokenAmount(usd: number | string, price: string): string {
+  return Big(usd || 0).div(price).toFixed(6, Big.roundDown);
 }

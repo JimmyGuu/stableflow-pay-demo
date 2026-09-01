@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import Big from "big.js";
 
 import { isAddressValid } from "@/lib/address";
-import { parsePositiveAmount, toAmountString } from "@/lib/amount";
+import { parsePositiveAmount, usdToTokenAmount } from "@/lib/amount";
 import {
-  isValidReceivePair,
+  findReceiveToken,
+  isStablecoinSymbol,
   type PayToken,
 } from "@/lib/checkout-options";
 import { shouldValidateCheckoutRecipient } from "@/lib/config";
@@ -78,14 +80,26 @@ export async function POST(request: Request) {
         error instanceof Error ? error.message : "Failed to load tokens";
       return NextResponse.json({ error: message }, { status: 502 });
     }
-    if (!isValidReceivePair(tokens, network, symbol)) {
+
+    const token = findReceiveToken(tokens, network, symbol);
+    if (!token) {
       return NextResponse.json(
         { error: "Invalid checkout network/symbol pair" },
         { status: 400 },
       );
     }
 
-    const amount = toAmountString(parsed);
+    const amount = usdToTokenAmount(
+      parsed,
+      isStablecoinSymbol(token.symbol) ? "1" : token.price,
+    );
+    if (Big(amount).lte(0)) {
+      return NextResponse.json(
+        { error: "Amount is too small for the selected token price" },
+        { status: 400 },
+      );
+    }
+
     const { session, checkoutUrl } = await createCheckoutSession({
       amount,
       apiKey,
